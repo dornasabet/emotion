@@ -7,7 +7,7 @@ class VggFeatures(nn.Module):
     def __init__(self, drop=0.2):
         super().__init__()
 
-        self.conv1a = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, padding=1)
+        self.conv1a = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1)
         self.conv1b = nn.Conv2d(64, out_channels=64, kernel_size=3, padding=1)
 
         self.conv2a = nn.Conv2d(64, 128, 3, padding=1)
@@ -33,10 +33,11 @@ class VggFeatures(nn.Module):
         self.bn4a = nn.BatchNorm2d(512)
         self.bn4b = nn.BatchNorm2d(512)
 
-        self.lin1 = nn.Linear(512 * 2 * 2, 4096)
+        self.lin1 = nn.Linear(512 * 130 * 13, 4096)
         self.lin2 = nn.Linear(4096, 4096)
 
         self.drop = nn.Dropout(p=drop)
+        self.flat = nn.Flatten()
 
     def forward(self, x):
         x = F.relu(self.bn1a(self.conv1a(x)))
@@ -54,9 +55,10 @@ class VggFeatures(nn.Module):
         x = F.relu(self.bn4a(self.conv4a(x)))
         x = F.relu(self.bn4b(self.conv4b(x)))
         x = self.pool(x)
-        # print(x.shape)
+        print(x.shape)
 
-        x = x.view(-1, 512 * 2 * 2)
+        # x = x.view(-1, 512 * 2 * 2)
+        x = self.flat(x)
         x = F.relu(self.drop(self.lin1(x)))
         x = F.relu(self.drop(self.lin2(x)))
 
@@ -66,7 +68,7 @@ class VggFeatures(nn.Module):
 class Vgg(VggFeatures):
     def __init__(self, drop=0.2):
         super().__init__(drop)
-        self.lin3 = nn.Linear(4096, 7)
+        self.lin3 = nn.Linear(4096, 10)
 
     def forward(self, x):
         x = super().forward(x)

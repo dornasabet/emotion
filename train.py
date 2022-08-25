@@ -11,6 +11,7 @@ from utils.checkpoint import save
 from utils.hparams import setup_hparams
 from utils.loops import train, evaluate
 from utils.setup_network import setup_network
+from utils.loss import total_loss
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -18,7 +19,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def run(net, logger, hps):
     # Create dataloaders
-    trainloader, valloader, testloader = get_dataloaders(bs=hps['bs'])
+    trainloader, valloader = get_dataloaders(bs=hps['bs'])
 
     net = net.to(device)
 
@@ -36,20 +37,38 @@ def run(net, logger, hps):
     # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, steps_per_epoch=len(trainloader), epochs=hps['n_epochs'])
     # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=1e-6, last_epoch=-1, verbose=True)
     # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-6, last_epoch=-1, verbose=False)
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
 
     best_acc = 0.0
 
     print("Training", hps['name'], "on", device)
     for epoch in range(hps['start_epoch'], hps['n_epochs']):
 
-        acc_tr, loss_tr = train(net, trainloader, criterion, optimizer, scaler)
+        acc_tr, loss_tr, vrmse_tr, vsagr_tr, vpcc_tr, vccc_tr, armse_tr, asagr_tr, apcc_tr, accc_tr = train(
+            net, trainloader, optimizer, scaler)
         logger.loss_train.append(loss_tr)
         logger.acc_train.append(acc_tr)
+        logger.vrmse_train.append(vrmse_tr)
+        logger.vsagr_train.append(vsagr_tr)
+        logger.vpcc_train.append(vpcc_tr)
+        logger.vccc_train.append(vccc_tr)
+        logger.armse_train.append(armse_tr)
+        logger.asagr_train.append(asagr_tr)
+        logger.apcc_train.append(apcc_tr)
+        logger.accc_train.append(accc_tr)
 
-        acc_v, loss_v = evaluate(net, valloader, criterion)
+        acc_v, loss_v, vrmse_v, vsagr_v, vpcc_v, vccc_v, armse_v, asagr_v, apcc_v, accc_v = evaluate(
+            net, valloader)
         logger.loss_val.append(loss_v)
         logger.acc_val.append(acc_v)
+        logger.vrmse_val.append(vrmse_v)
+        logger.vsagr_val.append(vsagr_v)
+        logger.vpcc_val.append(vpcc_v)
+        logger.vccc_val.append(vccc_v)
+        logger.armse_val.append(armse_v)
+        logger.asagr_val.append(asagr_v)
+        logger.apcc_val.append(apcc_v)
+        logger.accc_val.append(accc_v)
 
         # Update learning rate
         scheduler.step(acc_v)
