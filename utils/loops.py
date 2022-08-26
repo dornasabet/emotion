@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def train(net, dataloader, optimizer, scaler, Ncrop=True):
+def train(net, dataloader, optimizer, scaler, Ncrop=False):
     net = net.train()
     loss_tr, correct_count, n_samples = 0.0, 0.0, 0.0
     iters = len(dataloader)  # number of batches, not images
@@ -26,10 +26,10 @@ def train(net, dataloader, optimizer, scaler, Ncrop=True):
                 bs, ncrops, c, h, w = inputs.shape
                 inputs = inputs.view(-1, c, h, w)
 
-            # repeat labels ncrops times
-            labels[0] = torch.repeat_interleave(labels[0], repeats=ncrops, dim=0)
-            labels[1] = torch.repeat_interleave(labels[1], repeats=ncrops, dim=0)
-            labels[2] = torch.repeat_interleave(labels[2], repeats=ncrops, dim=0)
+                # repeat labels ncrops times
+                labels[0] = torch.repeat_interleave(labels[0], repeats=ncrops, dim=0)
+                labels[1] = torch.repeat_interleave(labels[1], repeats=ncrops, dim=0)
+                labels[2] = torch.repeat_interleave(labels[2], repeats=ncrops, dim=0)
 
             # forward + backward + optimize
             outputs = net(inputs)
@@ -49,23 +49,23 @@ def train(net, dataloader, optimizer, scaler, Ncrop=True):
             # calculate performance metrics
             loss_tr += loss.item() * inputs.size(0)
 
-            _, preds = torch.max(outputs.data, 1)
-            correct_count += (preds == labels).sum().item()
-            rmse_valense = RMSE(p_valence, labels[1])
+            _, preds = torch.max(p_class, 1)
+            correct_count += (preds == labels[0]).sum().item()
+            rmse_valense = RMSE(p_valence, labels[1]).item()
             running_rmse_valence += rmse_valense * inputs.size(0)
-            sagr_valence = SAGR(p_valence, labels[1])
+            sagr_valence = SAGR(p_valence, labels[1]).item()
             running_sagr_valence += sagr_valence * inputs.size(0)
-            pcc_valence = PCC(p_valence, labels[1])
+            pcc_valence = PCC(p_valence, labels[1]).item()
             running_pcc_valence += pcc_valence * inputs.size(0)
-            ccc_valence = CCC(p_valence, labels[1])
+            ccc_valence = CCC(p_valence, labels[1]).item()
             running_ccc_valence += ccc_valence * inputs.size(0)
-            rmse_arousal = RMSE(p_arousal, labels[2])
+            rmse_arousal = RMSE(p_arousal, labels[2]).item()
             running_rmse_arousal += rmse_arousal * inputs.size(0)
-            sagr_arousal = SAGR(p_arousal, labels[2])
+            sagr_arousal = SAGR(p_arousal, labels[2]).item()
             running_sagr_arousal += sagr_arousal * inputs.size(0)
-            pcc_arousal = PCC(p_arousal, labels[2])
+            pcc_arousal = PCC(p_arousal, labels[2]).item()
             running_pcc_arousal += pcc_arousal * inputs.size(0)
-            ccc_arousal = CCC(p_arousal, labels[2])
+            ccc_arousal = CCC(p_arousal, labels[2]).item()
             running_ccc_arousal += ccc_arousal * inputs.size(0)
             n_samples += inputs.size(0)
 
@@ -83,14 +83,17 @@ def train(net, dataloader, optimizer, scaler, Ncrop=True):
     return acc, loss, epoch_vrmse, epoch_vsagr, epoch_vpcc, epoch_vccc, epoch_armse, epoch_asagr, epoch_apcc, epoch_accc
 
 
-def evaluate(net, dataloader, Ncrop=True):
+def evaluate(net, dataloader, Ncrop=False):
     net = net.eval()
     loss_tr, correct_count, n_samples = 0.0, 0.0, 0.0
     running_rmse_valence = running_sagr_valence = running_pcc_valence = running_ccc_valence = 0.0
     running_rmse_arousal = running_sagr_arousal = running_pcc_arousal = running_ccc_arousal = 0.0
     for data in dataloader:
         inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        # inputs, labels = inputs.to(device), labels.to(device)
+        inputs = inputs.to(device)
+        labels[0] = labels[0].type(torch.LongTensor)
+        labels = [l.to(device) for l in labels]
         if Ncrop:
             # fuse crops and batchsize
             bs, ncrops, c, h, w = inputs.shape
@@ -126,23 +129,23 @@ def evaluate(net, dataloader, Ncrop=True):
         # calculate performance metrics
         loss_tr += loss.item() * inputs.size(0)
 
-        _, preds = torch.max(outputs.data, 1)
-        correct_count += (preds == labels).sum().item()
-        rmse_valense = RMSE(p_valence, labels[1])
+        _, preds = torch.max(p_class, 1)
+        correct_count += (preds == labels[0]).sum().item()
+        rmse_valense = RMSE(p_valence, labels[1]).item()
         running_rmse_valence += rmse_valense * inputs.size(0)
-        sagr_valence = SAGR(p_valence, labels[1])
+        sagr_valence = SAGR(p_valence, labels[1]).item()
         running_sagr_valence += sagr_valence * inputs.size(0)
-        pcc_valence = PCC(p_valence, labels[1])
+        pcc_valence = PCC(p_valence, labels[1]).item()
         running_pcc_valence += pcc_valence * inputs.size(0)
-        ccc_valence = CCC(p_valence, labels[1])
+        ccc_valence = CCC(p_valence, labels[1]).item()
         running_ccc_valence += ccc_valence * inputs.size(0)
-        rmse_arousal = RMSE(p_arousal, labels[2])
+        rmse_arousal = RMSE(p_arousal, labels[2]).item()
         running_rmse_arousal += rmse_arousal * inputs.size(0)
-        sagr_arousal = SAGR(p_arousal, labels[2])
+        sagr_arousal = SAGR(p_arousal, labels[2]).item()
         running_sagr_arousal += sagr_arousal * inputs.size(0)
-        pcc_arousal = PCC(p_arousal, labels[2])
+        pcc_arousal = PCC(p_arousal, labels[2]).item()
         running_pcc_arousal += pcc_arousal * inputs.size(0)
-        ccc_arousal = CCC(p_arousal, labels[2])
+        ccc_arousal = CCC(p_arousal, labels[2]).item()
         running_ccc_arousal += ccc_arousal * inputs.size(0)
         n_samples += inputs.size(0)
 
