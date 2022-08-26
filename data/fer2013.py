@@ -64,10 +64,11 @@ def get_dataloaders(path_train='train_d.csv', path_val='val_d.csv', train_dir=".
 
     test_transform = transforms.Compose([
         # transforms.Scale(52),
-        transforms.TenCrop(220),
-        transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-        transforms.Lambda(
-            lambda tensors: torch.stack([transforms.Normalize(mean=(mu,), std=(st,))(t) for t in tensors])),
+        # transforms.TenCrop(220),
+        # transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
+        # transforms.Lambda(
+        #     lambda tensors: torch.stack([transforms.Normalize(mean=(mu,), std=(st,))(t) for t in tensors])),
+        transforms.ToTensor(),transforms.Normalize(mean=(mu,), std=(st,))
     ])
 
     if augment:
@@ -77,11 +78,13 @@ def get_dataloaders(path_train='train_d.csv', path_val='val_d.csv', train_dir=".
             transforms.RandomHorizontalFlip(),
             transforms.RandomApply([transforms.RandomRotation(10)], p=0.5),
 
-            transforms.TenCrop(220),
-            transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-            transforms.Lambda(
-                lambda tensors: torch.stack([transforms.Normalize(mean=(mu,), std=(st,))(t) for t in tensors])),
-            transforms.Lambda(lambda tensors: torch.stack([transforms.RandomErasing(p=0.5)(t) for t in tensors])),
+            # transforms.TenCrop(220),
+            # transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
+            # transforms.Lambda(
+            #     lambda tensors: torch.stack([transforms.Normalize(mean=(mu,), std=(st,))(t) for t in tensors])),
+            # transforms.Lambda(lambda tensors: torch.stack([transforms.RandomErasing(p=0.5)(t) for t in tensors])),
+            transforms.ToTensor(),transforms.Normalize(mean=(mu,), std=(st,)),transforms.RandomErasing(p=0.5)
+
         ])
     else:
         train_transform = test_transform
